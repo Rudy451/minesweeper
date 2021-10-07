@@ -2,21 +2,17 @@ from os import system
 import time
 
 from grid import Grid
+from ai_player import AIPlayer
+from player import Player
 
 class Gameplay:
 
-    def __init__(self):
+    def __init__(self, player):
         self.board = Grid()
+        self.player = player
 
     def solved(self):
         return self.board.total_mines_calculator() == self.board.total_mines_revealed_calculator()
-
-    def make_guess(self):
-        return input(
-            "\nPlease enter the your target position (e.g., '2,3')"
-            + "\n"
-            + "> "
-        )
 
     def validate_input_value(self, pos):
         target = "012345678"
@@ -28,20 +24,18 @@ class Gameplay:
 
     def execute_guess(self, x, y):
         if self.board.grid[x][y].check_mine():
+            system("cls")
             print("BLAST!!!!")
+            time.sleep(2)
+            system("cls")
+            self.board.display_grid()
         else:
             self.board.value_generator(x, y)
 
-    def flag_choice(self):
-        choice = input(
-            "Would you like to flag a square?"
-            + "\n"
-            + "> "
-        )
-
+    def execute_flag_choice(self, choice):
         if self.validate_flag_choice(choice):
-            result = self.make_guess()
-            self.board.grid[int(result[0])][int(result[1])].set_value("F")
+            result = self.player.make_guess()
+            self.board.grid[int(result[0])][int(result[2])].set_value("F")
 
     def validate_flag_choice(self, choice):
        return choice.upper() == "Y" or choice.upper() == "YES"
@@ -50,11 +44,11 @@ class Gameplay:
         while not self.solved():
             system("cls")
             self.board.display_grid()
-            result = self.make_guess()
+            result = self.player.make_guess()
             if self.validate_input_value(result):
                 self.execute_guess(int(result[0]), int(result[2]))
-                self.flag_choice()
+                self.execute_flag_choice(self.player.flag_choice())
                 time.sleep(1)
 
-mine = Gameplay()
+mine = Gameplay(AIPlayer())
 mine.play()
