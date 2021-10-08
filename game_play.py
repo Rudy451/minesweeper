@@ -1,14 +1,14 @@
-# Verify keyboard import
-# Verify keycheck + save + load json files
-
-import keyboard
 import jsonpickle
+import keyboard
+import math
 from os import system
 import time
 
 from grid import Grid
 from ai_player import AIPlayer
 from player import Player
+
+leaderboard_times = []
 
 class Gameplay(object):
 
@@ -28,22 +28,17 @@ class Gameplay(object):
 
     def update_player_time(self):
         self.player_time = round(time.time() - self.base_time)
-        if self.player_time < 10:
-            player_time_display = "00:0" + str(self.player_time)
-        elif self.player_time < 60:
-            player_time_display = "00:" + str(self.player_time)
-        elif self.player_time < 600:
-            player_time_display = "0" + str(round(self.player_time / 60)) + ":" + ("0" if self.player_time % 60 < 10 else "") + str(self.player_time % 60)
-        else:
-            player_time_display = str(round(self.player_time / 60)) + ":" + ("0" if self.player_time % 60 < 10 else "") + str(self.player_time % 60)
+        player_time_display = display_time(self.player_time)
         print("Timer: " + player_time_display + "\n" )
 
     def validate_input_value(self, pos):
         target = "012345678"
+
         if len(pos) == 3:
             pos_1 = target.find(pos[0]) != -1
             pos_2 = target.find(pos[2]) != -1
             return pos_1 and pos_2
+
         return False
 
     def execute_guess(self, x, y):
@@ -88,10 +83,32 @@ def save_game(game):
         my_file = jsonpickle.encode(game)
         file.write(my_file)
 
+def display_time(player_time):
+    if player_time < 10:
+        player_time_display = "00:0" + str(player_time)
+    elif player_time < 60:
+        player_time_display = "00:" + str(player_time)
+    elif player_time < 600:
+        player_time_display = "0" + str(math.floor(player_time / 60)) + ":" + ("0" if player_time % 60 < 10 else "") + str(player_time % 60)
+    else:
+        player_time_display = str(math.floor(player_time / 60)) + ":" + ("0" if player_time % 60 < 10 else "") + str(player_time % 60)
+    return player_time_display
+
+def update_leaderboard(game):
+    if (game.player_time < leaderboard_times[len(leaderboard_times) - 1]) or len(leaderboard_times) == 0:
+        if len(leaderboard_times) == 10:
+            leaderboard_times.pop()
+        leaderboard_times.append(game.player_time)
+        leaderboard_times.sort()
+
+def print_leaderboard():
+    print("Leaderboard Times:")
+    for my_time in range(0, len(leaderboard_times)):
+        print("#" + str(my_time + 1) + ": " + display_time(leaderboard_times[my_time]))
+
 def clear_game():
     with open("minesweeper.json", "w") as file:
         file.truncate(0)
-
 
 mine = load_game()
 if(len(mine.saved_coords_list) == 0):
@@ -100,6 +117,8 @@ else:
     mine.reload_coords()
 try:
     mine.play()
+    update_leaderboard(mine)
+    print_leaderboard()
     clear_game()
 except KeyboardInterrupt:
     save_game(mine)
